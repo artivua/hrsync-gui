@@ -6,3 +6,4 @@ I used https://github.com/dparoli/hrsync and make some changes:
 2. Add rsync package install check
 3. Changed directories input through cli arguments to cli user input
 4. Add verbose/silent modes
+5. Removed SFTP support
