@@ -1,0 +1,155 @@
+
+	# -----------| Config |----------------
+
+	#for MANUAL define directories uncomment Source and Target
+	#Source=/home/user/docs
+	#Target=/media/data/backup
+
+	# Name of shadow directory
+	Shadow=".RSYNC"
+
+
+	# -----------| Script |----------------
+
+	Installed=$(apt-cache policy rsync | grep none)
+		if [ -z "$Installed" ]
+		then
+			echo "" > nul
+		else
+			echo -en "\033[37;1;41m ERROR! \033[0m"
+			echo " rsync not installed"
+		fi
+
+if [ "$1" = "-noverbose" ]
+
+	then
+
+		if [ "$Source" == "" ]
+			then
+				read -p 'Source (Master) path: ' Source
+		fi
+
+		if [ "$Target" == "" ]
+			then
+				read -p 'Target (Slave) path: ' Target
+		fi
+
+
+		if [ "${Source:0:1}" != / ]
+			then
+				exit 0
+		fi
+
+		if [ "${Target:0:1}" != / ]
+			then
+				exit 0
+		fi
+
+		if [ ! -d "$Source/$Shadow" ]
+			then
+				rsync -a --delete --link-dest="$Source" --exclude="/$Shadow" "$Source"/ "$Source/$Shadow"
+		fi
+
+		rsync -axXhHv --no-inc-recursive --numeric-ids --delete --delete-after "$Source"/ "$Target" > nul
+		rsync -a --delete --link-dest="$Source" --exclude="/$Shadow" "$Source"/ "$Source/$Shadow"
+		rsync -a --delete --link-dest="$Target" --exclude="/$Shadow" "$Target/" "$Target/$Shadow"
+
+
+	else
+		echo ""
+		echo -e "\033[1;44;37m ---- VERBOSE mode activated ---- \033[0m"
+		echo ""
+
+		if [ "$Source" == "" ]
+			then
+				read -p 'Source (Master) path: ' Source
+			else
+				echo -en "\033[1;42m INFO \033[0m"
+				echo " Source already configurated"
+		fi
+
+		if [ "$Target" == "" ]
+			then
+				read -p 'Target (Slave) path: ' Target
+			else
+				echo -en "\033[1;42m INFO \033[0m"
+				echo " Target already configurated"
+		fi
+
+
+
+		if [ "${Source:0:1}" != / ]
+			then
+				echo -en "\033[37;1;41m ERROR! \033[0m"
+				echo " Source path needs to be an absolute path"
+				exit 0
+			else
+				echo -en "\033[1;42m INFO \033[0m"
+				echo -e " Source path OK"
+		fi
+
+		if [ "${Target:0:1}" != / ]
+			then
+				echo -en "\033[37;1;41m ERROR! \033[0m"
+				echo " Target path needs to be an absolute path"
+				exit 0
+			else
+				echo -en "\033[1;42m INFO \033[0m"
+				echo -e " Target path OK"
+		fi
+
+		echo ""
+		echo -en "\033[1;37;43m INIT \033[0m"
+		echo " Starting execution!"
+
+		#sleep 1
+
+		# first time run: create source shadow
+		if [ ! -d "$Source/$Shadow" ]
+			then
+				echo ""
+				echo -en "\033[1;42m INFO \033[0m"
+				echo -e " First time run detected -> creating shadow directories"
+				rsync -a --stats --delete --link-dest="$Source" --exclude="/$Shadow" "$Source"/ "$Source/$Shadow"
+				#sleep 5
+				echo -e "shadow directories created!"
+			else
+				echo ""
+				echo -en "\033[1;42m INFO \033[0m"
+				echo " Non-first time run detected -> skipping creating shadow directories"
+		fi
+
+		echo ""
+		echo -en "\033[1;42m INFO \033[0m"
+		echo " Starting real sync:"
+		# do real syncronization
+		rsync -axXhHv --stats --no-inc-recursive --numeric-ids --delete --delete-after "$Source"/ "$Target"
+		#sleep 5
+
+		echo -en "\033[1;42m INFO \033[0m"
+		echo " Real sync done!"
+		echo ""
+
+		echo -en "\033[1;42m INFO \033[0m"
+		echo -n " Starting update source shadow directory:"
+		#update source shadow directory
+		rsync -a --delete --stats --link-dest="$Source" --exclude="/$Shadow" "$Source"/ "$Source/$Shadow"
+		#sleep 5
+		echo -en "\033[1;42m INFO \033[0m"
+		echo " Updated source shadow directory!"
+		echo ""
+
+		echo -en "\033[1;42m INFO \033[0m"
+		echo -n " Starting update target shadow directory:"
+		#update target shadow directory
+		rsync -a --delete --stats --link-dest="$Target" --exclude="/$Shadow" "$Target/" "$Target/$Shadow"
+		#sleep 5
+		echo -en "\033[1;42m INFO \033[0m"
+		echo " Updated target shadow directory!"
+
+		echo ""
+		echo -en "\033[1;37;43m INIT \033[0m"
+		echo " All jobs done!"
+
+	fi
+
